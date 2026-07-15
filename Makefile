@@ -20,6 +20,20 @@ else
   LDLIBS += -lncursesw
 endif
 
+# libcurl, for the weather fetch
+CURL_CFLAGS := $(shell pkg-config --cflags libcurl 2>/dev/null)
+CURL_LIBS   := $(shell pkg-config --libs libcurl 2>/dev/null)
+
+ifneq ($(CURL_LIBS),)
+  CFLAGS  += $(CURL_CFLAGS)
+  LDLIBS  += $(CURL_LIBS)
+else
+  LDLIBS  += -lcurl
+endif
+
+# pthread, for the background weather refresh
+LDLIBS += -lpthread
+
 all: csakura
 
 csakura: src/csakura.c
