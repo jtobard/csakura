@@ -74,6 +74,10 @@ csakura [options]
   -w NUM    wind strength, 0-10 (default: 1)
   -c NAME   blossom palette (default: sakura)
   -a        ASCII glyphs only (no unicode blossoms)
+  -d, --debug show detailed weather diagnostics at the bottom
+  --force=day|night|rain|norain|fog|nofog|snow|nosnow|calm|light|moderate|strong
+            skip/override the weather fetch; comma-separate to combine,
+            e.g. --force=night,snow,strong
   -h        help
   -v        version
 
@@ -96,6 +100,8 @@ csakura                 # default
 csakura -f 12 -p 3      # chill / low CPU (nice in a side pane)
 csakura -p 10 -w 6      # windy petal storm
 csakura -c mint         # mint palette
+csakura --debug         # show detailed weather diagnostics at the bottom
+csakura --force=night,snow,strong # force night time with heavy snow and strong wind
 ```
 
 ## Web version

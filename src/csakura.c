@@ -128,6 +128,7 @@ static int    opt_fps     = 20;    /* -f  frames per second (5-60)   */
 static int    opt_density = 5;     /* -p  petal density     (1-10)   */
 static double opt_wind    = 1.0;   /* -w  wind strength     (0-10)   */
 static bool   opt_ascii   = false; /* -a  ASCII glyphs only          */
+static bool   opt_debug   = false; /* -d, --debug show detailed weather diagnostics */
 static int    opt_palette = 0;     /* -c  blossom palette index      */
 static int    opt_force      = 0;  /* --force=day|night      0=auto, 1=day,  2=night  (debug) */
 static int    opt_force_rain = 0;  /* --force=rain|norain    0=auto, 1=rain, 2=norain (debug) */
@@ -321,6 +322,41 @@ static double snow_intensity_value(const char *cat)
     return 0.0; /* "no" */
 }
 
+static const char *weather_description(int code)
+{
+    switch (code) {
+    case 0:  return "despejado";
+    case 1:  return "mayormente despejado";
+    case 2:  return "parcialmente nublado";
+    case 3:  return "cubierto";
+    case 45:
+    case 48: return "niebla";
+    case 51:
+    case 53:
+    case 55: return "llovizna";
+    case 56:
+    case 57: return "llovizna helada";
+    case 61:
+    case 63:
+    case 65: return "lluvia";
+    case 66:
+    case 67: return "lluvia helada";
+    case 71:
+    case 73:
+    case 75: return "nieve";
+    case 77: return "granos de nieve";
+    case 80:
+    case 81:
+    case 82: return "chubascos de lluvia";
+    case 85:
+    case 86: return "chubascos de nieve";
+    case 95: return "tormenta";
+    case 96:
+    case 99: return "tormenta con granizo";
+    default: return "clima desconocido";
+    }
+}
+
 /* wind_speed_10m thresholds, in km/h */
 static const char *WIND_LABELS[]  = { "sin viento", "ligero", "moderado", "fuerte" };
 static const double WIND_FACTORS[] = { 0.15, 0.6, 1.3, 2.4 };
@@ -459,14 +495,21 @@ static void compute_weather(WeatherResult *out)
     if (opt_force_wind)
         out->wind_factor = WIND_FACTORS[opt_force_wind - 1];
 
-    snprintf(out->line, sizeof(out->line),
-        " %s | %.1f°C | lluvia: %s | niebla: %s | nieve: %s | viento: %.1f km/h (%s) | sol: %s ",
-        city, temp,
-        rcat,
-        out->fog ? "si" : "no",
-        scat,
-        wind, WIND_LABELS[wbucket],
-        is_day > 0.5 ? "si" : "no");
+    if (opt_debug) {
+        snprintf(out->line, sizeof(out->line),
+            " %s | %.1f°C | lluvia: %s | niebla: %s | nieve: %s | viento: %.1f km/h (%s) | sol: %s ",
+            city, temp,
+            rcat,
+            out->fog ? "si" : "no",
+            scat,
+            wind, WIND_LABELS[wbucket],
+            is_day > 0.5 ? "si" : "no");
+    } else {
+        snprintf(out->line, sizeof(out->line),
+            " %s | %.1f°C | %s ",
+            city, temp,
+            weather_description((int)code));
+    }
 
     out->ok = true;
 }
@@ -1361,6 +1404,7 @@ static void usage(FILE *out)
         "  -w NUM    wind strength, 0-10 (default: 1)\n"
         "  -c NAME   blossom palette (default: sakura)\n"
         "  -a        ASCII glyphs only (no unicode blossoms)\n"
+        "  -d, --debug show detailed weather diagnostics at the bottom\n"
         "      --force=day|night|rain|norain|fog|nofog|snow|nosnow|\n"
         "              calm|light|moderate|strong[,...]\n"
         "            skip/override the weather fetch (debug); comma-separate\n"
@@ -1388,12 +1432,16 @@ int main(int argc, char **argv)
 {
     static const struct option long_opts[] = {
         { "force", required_argument, NULL, 'F' },
+        { "debug", no_argument,       NULL, 'd' },
         { NULL, 0, NULL, 0 },
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "f:p:w:c:ahv", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "f:p:w:c:ahvd", long_opts, NULL)) != -1) {
         switch (opt) {
+        case 'd':
+            opt_debug = true;
+            break;
         case 'f':
             opt_fps = atoi(optarg);
             if (opt_fps < 5)  opt_fps = 5;
